@@ -43,39 +43,52 @@ Large-scale Benchmarking of Single-cell Differential Expression Analysis Methods
 ```
 
 
-## Arguments
+## Parameters
 
-### Arguments for SingleCell_Simulator
+### Parameters used for simulating datasets using SC.sim() in SingleCell_Simulator
   
-| Parameter                 | Default       | Description   |	
+| Parameter                 | Values used in the simulation | Description   |	
 | :------------------------ |:-------------:| :-------------|
+|ZeroInflate                |True           | logical parameter for zero-inflation in the data|
+|RandomEffect               |False          | only when longitudinal design is used|
+|metadataType               |'UVB'          | Univariate Binary design matrix
+|nSamples                   |c(20,50,100,200,500)| number of cells|
+|nPerSubject                | 1             | |
+|nGenes                     |c(500,1000,2000)| number of Genes|
+|nMetadata                  |1               |number of metadata|
+|effectSize                 |c(1,2,2.5,3,3.5)|effect size|
+|minFracZeroes              |    0.25        | minimum fraction of zeros|
+|pDE                        | 0.1            | proportion of differentially expressed genes|
+|nIterations                | 100            |number of times an experiment is repeated|
+|rSeed                      |568910          |reproducibility index (random seed)|
 
 
 
-
-### Arguments for SingleCell_Evaluator
+### Parameters used for evaluating benchmarking methods using SC.method in SingleCell_Evaluator
   
-| Parameter                 | Default       | Description   |	
+| Parameter                 | Values       | Description   |	
 | :------------------------ |:-------------:| :-------------|
+|Methods                | "BPSC","CPLM","DESeq2","DEsingle","edgeR","limmaVOOM",
+               "MAST","metagenomeSeq","monocle","negbin",
+               "scDD","Wilcoxon","ZIB","ZICP","ZINB","zingeR"          |all benchmarking methods|
+|fitlist (argument for running run_"")   |          |simulated datasets after applying filtering based on pre-specified abundance threshld ad prevalence|
+|transfMethod (argument for running run_"")|   default "none"      |  normalzation method   
 
 
 
 ## Output
 
 ### Output for SingleCell_Simulaor
-
-a list of three components
-
-| Object       | Description   |
-| :------------------------ | :-------------|
+```
+List of simulated datasets
+```
 
 
 ###  Output for SingleCell_Evaluator
 
-a list of three components
-
-| Object       | Description   |
-| :------------------------ | :-------------|
+```
+Table of marginal p-values, adjusted p-values (q-values after FDR correction), fold change for each feature for every scenario foe every method
+```
 
 
 

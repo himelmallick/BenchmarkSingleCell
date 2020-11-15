@@ -7,32 +7,38 @@ Large-scale Benchmarking of Single-cell Differential Expression Analysis Methods
 ## Cotents
 - [Overview](#Overview)
 - [Description](#Description)
-- [Usage](# Usage)
-- [Output](# Output)
+- [Usage](#Usage)
+- [Output](#Output)
 - [Examples](#Examples)
 - [Contributions](#contributions)
 
 
 ## Overview
-```
-BenchmarkSingleCell repository contains the R scripts for simulating datasets and evaluating methods of differential expression analysis for the simulating datasets. Specifically the folder Library contains the codes for conducting simulations and evaluations: 
 
-(1) SingleCell_Simulator: This script contains R function for simulating single cell RNAseq and bulk RNAseq data using simulators such as Splatter.
-(2) SingleCell_Evaluator: This script contains R function for applying different methods of differential analysis on the simulated datasets and evaluate the performance of the methods based on metrics such as sensitivity, false discovery rate (FDR) and false poitive rate (FPR). 
-(3) allUtilityFunctions_SC: This script contains R functions for different methods of normalization of scRNAseq and bulk RNAseq data
-(4) run_BPSC, ..., run_zingeR: These scripts contain R function for different methods of differential expression analysis for single cell data as well as bulk RNAseq data  
-```
+**BenchmarkSingleCell** repository contains the R scripts for simulating datasets and evaluating methods of differential expression analysis for the simulating datasets. Specifically the folder Library contains the codes for conducting simulations and evaluations: 
+
+(1) **SingleCell_Simulator**: This script contains R function for simulating single cell RNAseq and bulk RNAseq data using simulators such as Splatter.
+
+(2) **SingleCell_Evaluator**: This script contains R function for applying different methods of differential analysis on the simulated datasets and evaluate the performance of the methods based on metrics such as sensitivity, false discovery rate (FDR) and false poitive rate (FPR). 
+
+(3) **allUtilityFunctions_SC**: This script contains R functions for different methods of normalization of scRNAseq and bulk RNAseq data.
+
+(4) **run_BPSC**, ..., **run_zingeR**: These scripts contain R function for different methods of differential expression analysis for single cell data as well as bulk RNAseq data.  
+
+
+## Description
+
 
 ## Usage
 
-```
-SingleCell_Simulator
-
+**SingleCell_Simulator**
 ```
 
 ```
-SingleCell_Evaluator
 
+
+**SingleCell_Evaluator**
+```
 
 ```
 

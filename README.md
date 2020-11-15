@@ -68,9 +68,7 @@ Large-scale Benchmarking of Single-cell Differential Expression Analysis Methods
   
 | Parameter                 | Values       | Description   |	
 | :------------------------ |:-------------:| :-------------|
-|Methods                | "BPSC","CPLM","DESeq2","DEsingle","edgeR","limmaVOOM",
-               "MAST","metagenomeSeq","monocle","negbin",
-               "scDD","Wilcoxon","ZIB","ZICP","ZINB","zingeR"          |all benchmarking methods|
+|Methods                | "BPSC","CPLM","DESeq2","DEsingle","edgeR","limmaVOOM","MAST","metagenomeSeq","monocle","negbin",              "scDD","Wilcoxon","ZIB","ZICP","ZINB","zingeR"          |all benchmarking methods|
 |fitlist (argument for running run_"")   |          |simulated datasets after applying filtering based on pre-specified abundance threshld ad prevalence|
 |transfMethod (argument for running run_"")|   default "none"      |  normalzation method   
 

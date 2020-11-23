@@ -52,11 +52,11 @@ Large-scale Benchmarking of Single-cell Differential Expression Analysis Methods
 |ZeroInflate                |True           | logical parameter for zero-inflation in the data|
 |RandomEffect               |False          | only when longitudinal design is used|
 |metadataType               |'UVB'          | Univariate Binary design matrix
-|nSamples                   |c(20,50,100,200,500)| number of cells|
+|nSamples                   |20,50,100,200,500| number of cells|
 |nPerSubject                | 1             | |
-|nGenes                     |c(500,1000,2000)| number of Genes|
+|nGenes                     |500,1000,2000| number of Genes|
 |nMetadata                  |1               |number of metadata|
-|effectSize                 |c(1,2,2.5,3,3.5)|effect size|
+|effectSize                 |1,2,2.5,3,3.5|effect size|
 |minFracZeroes              |    0.25        | minimum fraction of zeros|
 |pDE                        | 0.1            | proportion of differentially expressed genes|
 |nIterations                | 100            |number of times an experiment is repeated|

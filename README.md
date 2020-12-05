@@ -10,7 +10,7 @@ Large-scale Benchmarking of Single-cell Differential Expression Analysis Methods
 - [Simulation Methods](#SimulationMethods)
 - [Examples](#Examples)
 - [Output](#Output)
-- [Folder Descriptions](#Folder Descriptions)
+- [Folder Descriptions](#FolderDescriptions)
 - [References](#References)
 - [Citation](#Citation)
 

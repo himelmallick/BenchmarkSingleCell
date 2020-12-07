@@ -4,9 +4,9 @@ Large-scale Benchmarking of Single-cell Differential Expression Analysis Methods
 ![Overview](https://github.com/himelmallick/BenchmarkSingleCell/raw/master/cover.png)
 
 
-## Cotents
+## Contents
 - [Introduction](#Introduction)
-- [Simulation Designs](#SimulationDesigns)
+- [Simulation Designs](#Simulation Designs)
 - [Simulation Methods](#SimulationMethods)
 - [Examples](#Examples)
 - [Output](#Output)

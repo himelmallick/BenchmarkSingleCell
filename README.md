@@ -6,7 +6,7 @@ Large-scale Benchmarking of Single-cell Differential Expression Analysis Methods
 
 ## Contents
 - [Introduction](#Introduction)
-- [Simulation Designs](#Simulation Designs)
+- [Simulation Designs](#SimulationDesigns)
 - [Simulation Methods](#SimulationMethods)
 - [Examples](#Examples)
 - [Output](#Output)
@@ -23,7 +23,7 @@ Although the commonly used methods described above have been useful to identify 
 
 
 
-## Simulation Designs
+## SimulationDesigns
 We simulate data varying a combination of parameters such as number of cells (nSamples), number of genes (nGenes), effect size (effectSize). In the table below we give the list of parameters and their values used in our simulation. 
 
 ### Parameters used for simulating datasets using SC.sim() in SingleCell_Simulator

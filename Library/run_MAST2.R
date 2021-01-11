@@ -1,12 +1,12 @@
-##########################
-# MAST truncated (MAST2) #
-##########################
+#########
+# MAST2 #
+#########
 
 ###########################
 # Load Essential Packages #
 ###########################
 
-# pacman, devtools, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
+# pacman, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
 load_essential_packages()
 
 ###########################################
@@ -29,9 +29,9 @@ if(! require("MAST")) {
 suppressPackageStartupMessages(library(edgeR))
 suppressPackageStartupMessages(library(MAST))
 
-###########################
+##########################
 # Fit MAST2 To A Dataset #
-###########################
+##########################
 
 fit.MAST2 <-function(features, 
                     metadata, 
@@ -46,17 +46,27 @@ fit.MAST2 <-function(features,
   
   if (transformation!='NONE') stop ('Transformation currently not supported for a default CPLM model. Use NONE.')
   
-  ##########################
-  # Standard MAST pipeline #
-  ##########################
+  ############################################
+  # Standard MAST pipeline (CPM + Covariate) #
+  ############################################
   
   name_metadata <- names(metadata)
-  grp <- metadata[,name_metadata]
+  grp <- metadata[, name_metadata]
   dge <- DGEList(counts = t(features))
   dge <- edgeR::calcNormFactors(dge)
   cpms <- edgeR::cpm(dge)
   sca <- FromMatrix(exprsArray = log2(cpms + 1), cData = data.frame(wellKey=rownames(features), grp = grp), fData = data.frame(primerid= colnames(features)))
-  zlmdata <- zlm(~grp, sca)
+
+  # Include gene detection prop in the covariates
+  counts = t(features)
+  ngeneson <- apply(counts, 2, function(x) mean(x>0))
+  CD <- colData(sca)
+  CD$ngeneson <- ngeneson
+  CD$cngeneson <- CD$ngeneson-mean(ngeneson)
+  colData(sca) <- CD
+  
+  # Differential expression
+  zlmdata <- zlm(~ cngeneson + grp, sca = sca)
   fit <- lrTest(zlmdata, "grp")
   
   ###################
@@ -71,10 +81,10 @@ fit.MAST2 <-function(features,
     paras<-paras[, !duplicated(colnames(paras))]  
     }
   else{
-    # coef<-fit[,3,1]
-    # pval<-fit[,3,3]
-    coef<-fit[,1,1]
-    pval<-fit[,1,3]
+    coef<-fit[,3,1]
+    pval<-fit[,3,3]
+    # coef<-fit[,1,1]
+    # pval<-fit[,1,3]
     paras<-cbind.data.frame(coef, pval)
     paras$feature<-rownames(paras)
     paras$metadata<- names(metadata)

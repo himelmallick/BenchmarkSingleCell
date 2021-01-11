@@ -6,7 +6,7 @@
 # Load Essential Packages #
 ###########################
 
-# pacman, devtools, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
+# pacman, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
 load_essential_packages()
 
 ###########################################
@@ -46,17 +46,25 @@ fit.MAST <-function(features,
   
   if (transformation!='NONE') stop ('Transformation currently not supported for a default CPLM model. Use NONE.')
   
-  ##########################
-  # Standard MAST pipeline #
-  ##########################
+  ############################################
+  # Standard MAST pipeline (TPM + Covariate) #
+  ############################################
   
   name_metadata <- names(metadata)
-  grp <- metadata[,name_metadata]
-  dge <- DGEList(counts = t(features))
-  dge <- edgeR::calcNormFactors(dge)
-  cpms <- edgeR::cpm(dge)
-  sca <- FromMatrix(exprsArray = log2(cpms + 1), cData = data.frame(wellKey=rownames(features), grp = grp), fData = data.frame(primerid= colnames(features)))
-  zlmdata <- zlm(~grp, sca)
+  grp <- metadata[, name_metadata]
+  counts = t(features)
+  tpms <- counts*1e6/colSums(counts)
+  sca <- FromMatrix(exprsArray = log2(tpms + 1), cData = data.frame(wellKey=rownames(features), grp = grp), fData = data.frame(primerid= colnames(features)))
+
+  # Include gene detection prop in the covariates
+  ngeneson <- apply(counts, 2, function(x) mean(x>0))
+  CD <- colData(sca)
+  CD$ngeneson <- ngeneson
+  CD$cngeneson <- CD$ngeneson-mean(ngeneson)
+  colData(sca) <- CD
+  
+  # Differential expression
+  zlmdata <- zlm(~ cngeneson + grp, sca = sca)
   fit <- lrTest(zlmdata, "grp")
   
   ###################
@@ -74,7 +82,7 @@ fit.MAST <-function(features,
     coef<-fit[,3,1]
     pval<-fit[,3,3]
     # coef<-fit[,1,1]
-    #pval<-fit[,1,3]
+    # pval<-fit[,1,3]
     paras<-cbind.data.frame(coef, pval)
     paras$feature<-rownames(paras)
     paras$metadata<- names(metadata)

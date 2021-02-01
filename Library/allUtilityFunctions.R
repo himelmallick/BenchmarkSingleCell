@@ -1072,3 +1072,167 @@ get_pval_zingeR<-function(fit){
   }
   return(all_iterationsResults)
 }
+
+
+#############################################################################
+# A Metabenchmarking Routine for Evaluating Single-cell DE Analysis Methods #
+#############################################################################
+
+######################################################################
+# THIS VERSION OF THE CODE ONLY INCLUDES A SUBSET OF PARAMETERS THAT # 
+# VARY. THE REST OF THE PARAMETERS ARE FIXED AT THEIR DEAFULT VALUES #
+######################################################################
+
+SingleCell_Simulator<-
+  function(simulator = 'splatter', 
+           template = NULL, # Must be an SCE object if not vanilla
+           nGenes = 2000, 
+           nCells = 100,
+           effectSize = 1,
+           min_expression = 0,
+           min_prevalence = 0,
+           dropout = TRUE,
+           nIterations = 100,
+           seed = 1234,
+           comdelim = "_", # The delimiter for parameters used for naming synthetic datasets.
+           ...){ 
+    
+    ########################
+    # Invoke template data #
+    ########################
+    
+    if (!is.null(template) && class(template)!="SingleCellExperiment"){
+      stop("Template data must be a SingleCellExperiment object")
+    }
+    
+    ####################
+    # Invoke simulator #
+    ####################
+    
+    if(simulator!="splatter"){
+      stop("Non-splatter simulator is currently not supported!")
+    }
+    
+    #################################################
+    # Generate simulated datasets and assign labels #
+    #################################################
+    
+    reps = 1:nIterations # How many datasets?
+    simparams = apply(expand.grid(nGenes, nCells, effectSize, min_prevalence, dropout, reps), 1, paste0, collapse = comdelim)
+    simparamslabels = c("nGenes", "nCells", "effectSize", "min_prevalence", "dropout", "rep")
+    
+    #############################
+    # Simulation using splatter # 
+    #############################
+    
+    simlist0 <- vector("list", length = length(reps))
+    
+    #######################
+    # Initialize splatter # 
+    #######################
+    
+    Splatparams <- newSplatParams()
+    if (!is.null(template)) {
+      Splatparams<-splatEstimate(template)
+    }
+    
+    ########################################
+    # Loop over all parameter combinations #
+    ########################################
+    
+    for (i in seq_along(simparams)){
+      
+      ###########
+      # Extract #
+      ###########
+      
+      params = strsplit(simparams[i], comdelim)[[1]]
+      names(params) <- simparamslabels
+      
+      ###############################
+      # Pre-processing for Splatter #
+      ###############################
+      
+      nGenes = as.integer(params["nGenes"])
+      nCells = as.integer(params["nCells"])
+      effectSize = as.integer(params["effectSize"])
+      min_prevalence = as.integer(params["min_prevalence"])
+      dropout = as.character(params["dropout"])
+      
+      ####################
+      # Trigger Splatter #
+      ####################
+      
+      Splatparams <- setParam(Splatparams, "nGenes", nGenes) 
+      Splatparams <- setParam(Splatparams, "batchCells", nCells)
+      Splatparams <- setParam(Splatparams, "de.facLoc", effectSize) 
+      Splatparams <- setParam(Splatparams, "dropout.type", "experiment")
+      Splatparams <- setParam(Splatparams, "dropout.type", ifelse(dropout=="1", 'experiment', 'none'))
+      Splatparams <- setParam(Splatparams, "dropout.mid", 3)
+      Splatparams <- setParam(Splatparams, "seed", i)
+      sim <- splatSimulate(Splatparams, group.prob=c(.5,.5), method="groups", verbose = FALSE)
+
+      ##########################
+      # Extract TP Information #
+      ##########################
+      
+      colInfo<-data.frame(colData(sim))
+      rowInfo<-data.frame(rowData(sim))
+      features<-assay(sim,"counts")
+      features<-data.frame(t(features))
+      trueCounts<-assay(sim,"TrueCounts")
+      
+      ########################
+      # Restructure Metadata #
+      ########################
+      
+      colInfo$Meta<-ifelse(colInfo$Group == "Group1", 0, 1)
+      metadata<-data.frame(Metadata_TP=colInfo$Meta, row.names=rownames(colInfo))
+      
+      ########################
+      # Restructure Features #
+      ########################
+      
+      rowInfo$TP<-ifelse(rowInfo$DEFacGroup1 == 1 & rowInfo$DEFacGroup2 == 1, FALSE, TRUE)
+      rownames(rowInfo)<-ifelse(rowInfo$TP, paste(rownames(rowInfo), "TP", sep="_"), rownames(rowInfo))
+      names(features)<-rownames(rowInfo)
+      rownames(features)<-rownames(metadata)
+      
+      ###########################
+      # Summarizing LibSize, ID #
+      ###########################
+      
+      libSize<-rowSums(features)
+      ID<-rownames(features)
+      
+      ####################################
+      # Collect simulated data as a list #
+      ####################################
+      
+      simlist0[[i]]<-list(features = features,
+                          metadata = metadata,
+                          libSize = libSize, 
+                          ID = ID)
+    }
+    
+    ###############################
+    # Assign distingushable names #
+    ###############################
+    
+    names(simlist0) <- simparams
+    
+    ####################
+    # Simple Filtering #
+    ####################
+    
+    simlist <- list.SimpleFilter(simlist0, min_expression, min_prevalence)
+    
+    ##########################################################
+    # Output a list of quality-controlled synthetic datasets #
+    ##########################################################
+    
+    return(simlist = simlist)
+    
+  }
+
+

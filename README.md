@@ -103,6 +103,6 @@ Zappia et al. (2017). [Splatter: Simulation of Single-cell RNA Sequencing Data](
 Citation
 --------
 
-Mallick H, Chatterjee S, Chowdhury S, Chatterjee S, Hicks S (2021+). Differential Expression Analysis of Single-cell RNA-Seq Data using Self-adaptive Tweedie Generalized Linear Models (In Submission).
+Mallick H et al. (2021). [Differential Expression of Single-cell RNA-seq Data using Tweedie Models](https://doi.org/10.1101/2021.03.28.437378). 
 
 

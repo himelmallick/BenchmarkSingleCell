@@ -1,6 +1,6 @@
-#######################################################################################
-# Zero-inflated Compound Poisson with libray size covariate in count submodel (ZICP2) #
-#######################################################################################
+###########################################################################################
+# Zero-inflated Compound Poisson with libray size covariate in the count submodel (ZICP2) #
+###########################################################################################
 
 ###########################
 # Load Essential Packages #
@@ -27,9 +27,9 @@ suppressPackageStartupMessages(library(statmod))
 suppressPackageStartupMessages(library(cplm))
 
 
-#########################
+##########################
 # Fit ZICP2 To A Dataset #
-#########################
+##########################
 
 fit.ZICP2 <- function(features, 
                      metadata, 
@@ -74,12 +74,12 @@ fit.ZICP2 <- function(features,
         fit1 <- glmmTMB::glmmTMB(formula = formula,  
                                  data = dat_sub, 
                                  family = glmmTMB::tweedie(link = "log"), 
-                                 ziformula = ~0)
+                                 ziformula = ~1) # Intercept-only ZI model
       }, error=function(err){
         fit1 <- try({glmmTMB::glmmTMB(formula = formula,  
                                       data = dat_sub, 
                                       family = glmmTMB::tweedie(link = "log"), 
-                                      ziformula = ~0)}) 
+                                      ziformula = ~1)}) # Intercept-only ZI model
         return(fit1)
       })
       
@@ -106,10 +106,10 @@ fit.ZICP2 <- function(features,
     else{ 
       fit <- tryCatch({
         fit1 <- cplm::zcpglm(formula, 
-                            data = dat_sub)
+                            data = dat_sub) # Intercept-only ZI model
       }, error=function(err){
         fit1 <- try({cplm::zcpglm(formula, 
-                                 data = dat_sub)}) 
+                                 data = dat_sub)}) # Intercept-only ZI model
         return(fit1)
       })
       

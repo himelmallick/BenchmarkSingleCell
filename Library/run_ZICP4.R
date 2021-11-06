@@ -27,9 +27,9 @@ suppressPackageStartupMessages(library(statmod))
 suppressPackageStartupMessages(library(cplm))
 
 
-#########################
+##########################
 # Fit ZICP4 To A Dataset #
-#########################
+##########################
 
 fit.ZICP4 <- function(features, 
                      metadata, 
@@ -63,6 +63,7 @@ fit.ZICP4 <- function(features,
     dat_sub <- data.frame(expr = as.numeric(featuresVector), metadata, libSize, ID)
     dat_sub2<- dat_sub[, !colnames(dat_sub) %in% c('expr', 'ID')]
     formula<-as.formula(paste("expr ~ ", paste(colnames(dat_sub2), collapse= "+")))
+    formula_zicp<-update(formula,. ~ . || 1 + libSize)
     
     #######################
     # Random effect model #
@@ -74,12 +75,12 @@ fit.ZICP4 <- function(features,
         fit1 <- glmmTMB::glmmTMB(formula = formula,  
                                  data = dat_sub, 
                                  family = glmmTMB::tweedie(link = "log"), 
-                                 ziformula = ~0)
+                                 ziformula = ~1+libSize)
       }, error=function(err){
         fit1 <- try({glmmTMB::glmmTMB(formula = formula,  
                                       data = dat_sub, 
                                       family = glmmTMB::tweedie(link = "log"), 
-                                      ziformula = ~0)}) 
+                                      ziformula = ~1+libSize)}) 
         return(fit1)
       })
       
@@ -105,10 +106,10 @@ fit.ZICP4 <- function(features,
     
     else{ 
       fit <- tryCatch({
-        fit1 <- cplm::zcpglm(formula, 
+        fit1 <- cplm::zcpglm(formula_zicp, 
                             data = dat_sub)
       }, error=function(err){
-        fit1 <- try({cplm::zcpglm(formula, 
+        fit1 <- try({cplm::zcpglm(formula_zicp, 
                                  data = dat_sub)}) 
         return(fit1)
       })
@@ -157,9 +158,9 @@ fit.ZICP4 <- function(features,
   return(paras)     
 }
 
-##################################
+###################################
 # Fit ZICP4 To A List of Datasets #
-##################################
+###################################
 
 list.ZICP4<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
   foreach(physeq = physeq, 

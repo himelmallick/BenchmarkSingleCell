@@ -27,9 +27,9 @@ suppressPackageStartupMessages(library(statmod))
 suppressPackageStartupMessages(library(cplm))
 
 
-#########################
+##########################
 # Fit ZICP3 To A Dataset #
-#########################
+##########################
 
 fit.ZICP3 <- function(features, 
                      metadata, 
@@ -69,6 +69,7 @@ fit.ZICP3 <- function(features,
     
     if(length(unique(libSize)) > 1){ # To prevent offsetting with TSS-normalized data 
       formula<-update(formula, . ~ . - offset(log(libSize)))
+      formula_zicp<-update(formula,. ~ . || 1 + offset(log(libSize)))
     }
     
     #######################
@@ -81,12 +82,12 @@ fit.ZICP3 <- function(features,
         fit1 <- glmmTMB::glmmTMB(formula = formula,  
                                  data = dat_sub, 
                                  family = glmmTMB::tweedie(link = "log"), 
-                                 ziformula = ~0)
+                                 ziformula = ~1+offset(log(libSize)))
       }, error=function(err){
         fit1 <- try({glmmTMB::glmmTMB(formula = formula,  
                                       data = dat_sub, 
                                       family = glmmTMB::tweedie(link = "log"), 
-                                      ziformula = ~0)}) 
+                                      ziformula = ~1+offset(log(libSize)))}) 
         return(fit1)
       })
       
@@ -111,10 +112,10 @@ fit.ZICP3 <- function(features,
     
     else{ 
       fit <- tryCatch({
-        fit1 <- cplm::zcpglm(formula, 
+        fit1 <- cplm::zcpglm(formula_zicp, 
                             data = dat_sub)
       }, error=function(err){
-        fit1 <- try({cplm::zcpglm(formula, 
+        fit1 <- try({cplm::zcpglm(formula_zicp, 
                                  data = dat_sub)}) 
         return(fit1)
       })
@@ -162,9 +163,9 @@ fit.ZICP3 <- function(features,
   return(paras)     
 }
 
-##################################
+###################################
 # Fit ZICP3 To A List of Datasets #
-##################################
+###################################
 
 list.ZICP3<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
   foreach(physeq = physeq, 

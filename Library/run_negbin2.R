@@ -1,48 +1,36 @@
-###################################################################################
-# Zero-inflated Compound Poisson with libray size offset in count submodel (ZICP) #
-###################################################################################
+################################################################
+# Negative Binomial with library size as a covariate (negbin2) #
+################################################################
 
 ###########################
 # Load Essential Packages #
 ###########################
 
-# pacman, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
+# pacman, devtools, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
 load_essential_packages()
 
 ###########################################
 # Load Dedicated Method-specific Packages #
 ###########################################
 
-pacman::p_load("pbapply", "glmmTMB", "cplm")
+pacman::p_load("pbapply", "MASS", "glmmTMB")
 
-if (packageVersion("statmod")!="1.4.33"){
-  devtools::install_version("statmod", version = "1.4.33", repos = "http://cran.us.r-project.org")
-}
+############################
+# Fit negbin2 To A Dataset #
+############################
 
-if (packageVersion("cplm")!="0.7-8"){
-  devtools::install_version("cplm", version = "0.7-8", repos = "http://cran.us.r-project.org")
-}
-
-suppressPackageStartupMessages(library(statmod))
-suppressPackageStartupMessages(library(cplm))
-
-
-#########################
-# Fit ZICP To A Dataset #
-#########################
-
-fit.ZICP <- function(features, 
+fit.negbin2 <- function(features, 
                      metadata, 
                      libSize, 
                      ID, 
-                     transformation,
+                     transformation, 
                      multiple_qvalues){
   
   #########################
   # Transformation if any #
   #########################
   
-  if (transformation!='NONE') stop ('Transformation currently not supported for a default ZICP model. Use NONE.')
+  if (transformation!='NONE') stop ('Transformation currently not supported for a default negbin2 model. Use NONE.')
   
   #####################
   # Per-feature model #
@@ -61,16 +49,9 @@ fit.ZICP <- function(features,
     #################################
     
     dat_sub <- data.frame(expr = as.numeric(featuresVector), metadata, libSize, ID)
-    formula<-as.formula(paste("expr ~ ", paste(colnames(metadata), collapse= "+")))
-    
-    ##############################################
-    # Automatic library size adjustment for GLMs #
-    ##############################################
-    
-    if(length(unique(libSize)) > 1){ # To prevent offsetting with TSS-normalized data 
-      formula<-update(formula, . ~ . - offset(log(libSize)))
-    }
-    
+    dat_sub2<- dat_sub[, !colnames(dat_sub) %in% c('expr', 'ID')]
+    formula<-as.formula(paste("expr ~ ", paste(colnames(dat_sub2), collapse= "+")))
+
     #######################
     # Random effect model #
     #######################
@@ -80,12 +61,12 @@ fit.ZICP <- function(features,
       fit <- tryCatch({
         fit1 <- glmmTMB::glmmTMB(formula = formula,  
                                  data = dat_sub, 
-                                 family = glmmTMB::tweedie(link = "log"), 
+                                 family = nbinom2, 
                                  ziformula = ~0)
       }, error=function(err){
         fit1 <- try({glmmTMB::glmmTMB(formula = formula,  
                                       data = dat_sub, 
-                                      family = glmmTMB::tweedie(link = "log"), 
+                                      family = nbinom2, 
                                       ziformula = ~0)}) 
         return(fit1)
       })
@@ -96,6 +77,7 @@ fit.ZICP <- function(features,
       
       if (class(fit) != "try-error"){
         para<-as.data.frame(coef(summary(fit))$cond)[-1,-3]
+        para<-para[-nrow(para),] # Remove library size coefficients
       } else{
         print(paste("Fitting problem for feature", x, "returning NA"))
         para<- as.data.frame(matrix(NA, nrow=ncol(metadata), ncol=3))
@@ -111,11 +93,11 @@ fit.ZICP <- function(features,
     
     else{ 
       fit <- tryCatch({
-        fit1 <- cplm::zcpglm(formula, 
-                            data = dat_sub)
-      }, error=function(err){
-        fit1 <- try({cplm::zcpglm(formula, 
-                                 data = dat_sub)}) 
+        fit1 <- MASS::glm.nb(formula, 
+                             data = dat_sub)
+        }, error=function(err){
+          fit1 <- try({MASS::glm.nb(formula, 
+                                    data = dat_sub)}) 
         return(fit1)
       })
       
@@ -124,11 +106,12 @@ fit.ZICP <- function(features,
       ###################################
       
       if (class(fit) != "try-error"){
-        para<-as.data.frame(summary(fit)$coefficients$tweedie)[-1,-3]
-      } else{
-        print(paste("Fitting problem for feature", x, "returning NA"))
-        para<- as.data.frame(matrix(NA, nrow=ncol(metadata), ncol=3))  
-      }
+        para<-as.data.frame(summary(fit)$coefficients)[-1,-3]
+        para<-para[-nrow(para),] # Remove library size coefficients
+        } else{
+          print(paste("Fitting problem for feature", x, "returning NA"))
+          para<- as.data.frame(matrix(NA, nrow=ncol(metadata), ncol=3))  
+          }
       colnames(para)<-c('coef', 'stderr', 'pval')
       para$metadata<-colnames(metadata)
       para$feature<-colnames(features)[x]
@@ -159,19 +142,19 @@ fit.ZICP <- function(features,
   paras<-paras[order(paras$qval_BH, decreasing=FALSE),]
   paras<-dplyr::select(paras, c('feature', 'metadata'), everything())
   rownames(paras)<-NULL
-  return(paras)     
+  return(paras)   
 }
 
-##################################
-# Fit ZICP To A List of Datasets #
-##################################
+#####################################
+# Fit negbin2 To A List of Datasets #
+#####################################
 
-list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
+list.negbin2<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
   foreach(physeq = physeq, 
           .export = c("pvalueAdjustment_HM", "append_qvalues",
-                      "fit.ZICP"), 
+                      "fit.negbin2"), 
           .packages = c("tidyverse", "fdrtool", "ashr", "GMPR", "swfdr", "genefilter", "IHW",
-                        "pbapply", "cplm", "glmmTMB"),
+                        "pbapply", "MASS", "glmmTMB"),
           .errorhandling = "remove") %dopar% 
     {
       start.time<-Sys.time()
@@ -179,7 +162,7 @@ list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
       metadata<-physeq$metadata
       libSize<-physeq$libSize
       ID<-physeq$ID
-      DD<-fit.ZICP(features, metadata, libSize, ID, transformation, multiple_qvalues)
+      DD<-fit.negbin2(features, metadata, libSize, ID, transformation, multiple_qvalues)
       DD$pairwiseAssociation<-paste('pairwiseAssociation', 1:nrow(DD), sep='')
       wh.TP<-intersect(grep("[[:print:]]+\\_TP$", DD$metadata), grep("[[:print:]]+\\_TP$", DD$feature))
       newname<-paste0(DD$pairwiseAssociation[wh.TP], "_TP")

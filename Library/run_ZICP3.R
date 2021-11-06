@@ -1,6 +1,6 @@
-###################################################################################
-# Zero-inflated Compound Poisson with libray size offset in count submodel (ZICP) #
-###################################################################################
+####################################################################################
+# Zero-inflated Compound Poisson with libray size offset in both submodels (ZICP3) #
+####################################################################################
 
 ###########################
 # Load Essential Packages #
@@ -28,10 +28,10 @@ suppressPackageStartupMessages(library(cplm))
 
 
 #########################
-# Fit ZICP To A Dataset #
+# Fit ZICP3 To A Dataset #
 #########################
 
-fit.ZICP <- function(features, 
+fit.ZICP3 <- function(features, 
                      metadata, 
                      libSize, 
                      ID, 
@@ -42,7 +42,7 @@ fit.ZICP <- function(features,
   # Transformation if any #
   #########################
   
-  if (transformation!='NONE') stop ('Transformation currently not supported for a default ZICP model. Use NONE.')
+  if (transformation!='NONE') stop ('Transformation currently not supported for a default ZICP3 model. Use NONE.')
   
   #####################
   # Per-feature model #
@@ -163,13 +163,13 @@ fit.ZICP <- function(features,
 }
 
 ##################################
-# Fit ZICP To A List of Datasets #
+# Fit ZICP3 To A List of Datasets #
 ##################################
 
-list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
+list.ZICP3<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
   foreach(physeq = physeq, 
           .export = c("pvalueAdjustment_HM", "append_qvalues",
-                      "fit.ZICP"), 
+                      "fit.ZICP3"), 
           .packages = c("tidyverse", "fdrtool", "ashr", "GMPR", "swfdr", "genefilter", "IHW",
                         "pbapply", "cplm", "glmmTMB"),
           .errorhandling = "remove") %dopar% 
@@ -179,7 +179,7 @@ list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
       metadata<-physeq$metadata
       libSize<-physeq$libSize
       ID<-physeq$ID
-      DD<-fit.ZICP(features, metadata, libSize, ID, transformation, multiple_qvalues)
+      DD<-fit.ZICP3(features, metadata, libSize, ID, transformation, multiple_qvalues)
       DD$pairwiseAssociation<-paste('pairwiseAssociation', 1:nrow(DD), sep='')
       wh.TP<-intersect(grep("[[:print:]]+\\_TP$", DD$metadata), grep("[[:print:]]+\\_TP$", DD$feature))
       newname<-paste0(DD$pairwiseAssociation[wh.TP], "_TP")

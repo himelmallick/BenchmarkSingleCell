@@ -1,6 +1,6 @@
-###################################################################################
-# Zero-inflated Compound Poisson with libray size offset in count submodel (ZICP) #
-###################################################################################
+#######################################################################################
+# Zero-inflated Compound Poisson with libray size covariate in count submodel (ZICP2) #
+#######################################################################################
 
 ###########################
 # Load Essential Packages #
@@ -28,10 +28,10 @@ suppressPackageStartupMessages(library(cplm))
 
 
 #########################
-# Fit ZICP To A Dataset #
+# Fit ZICP2 To A Dataset #
 #########################
 
-fit.ZICP <- function(features, 
+fit.ZICP2 <- function(features, 
                      metadata, 
                      libSize, 
                      ID, 
@@ -42,7 +42,7 @@ fit.ZICP <- function(features,
   # Transformation if any #
   #########################
   
-  if (transformation!='NONE') stop ('Transformation currently not supported for a default ZICP model. Use NONE.')
+  if (transformation!='NONE') stop ('Transformation currently not supported for a default ZICP2 model. Use NONE.')
   
   #####################
   # Per-feature model #
@@ -61,15 +61,8 @@ fit.ZICP <- function(features,
     #################################
     
     dat_sub <- data.frame(expr = as.numeric(featuresVector), metadata, libSize, ID)
-    formula<-as.formula(paste("expr ~ ", paste(colnames(metadata), collapse= "+")))
-    
-    ##############################################
-    # Automatic library size adjustment for GLMs #
-    ##############################################
-    
-    if(length(unique(libSize)) > 1){ # To prevent offsetting with TSS-normalized data 
-      formula<-update(formula, . ~ . - offset(log(libSize)))
-    }
+    dat_sub2<- dat_sub[, !colnames(dat_sub) %in% c('expr', 'ID')]
+    formula<-as.formula(paste("expr ~ ", paste(colnames(dat_sub2), collapse= "+")))
     
     #######################
     # Random effect model #
@@ -96,6 +89,7 @@ fit.ZICP <- function(features,
       
       if (class(fit) != "try-error"){
         para<-as.data.frame(coef(summary(fit))$cond)[-1,-3]
+        para<-para[-nrow(para),] # Remove library size coefficients
       } else{
         print(paste("Fitting problem for feature", x, "returning NA"))
         para<- as.data.frame(matrix(NA, nrow=ncol(metadata), ncol=3))
@@ -125,6 +119,7 @@ fit.ZICP <- function(features,
       
       if (class(fit) != "try-error"){
         para<-as.data.frame(summary(fit)$coefficients$tweedie)[-1,-3]
+        para<-para[-nrow(para),] # Remove library size coefficients
       } else{
         print(paste("Fitting problem for feature", x, "returning NA"))
         para<- as.data.frame(matrix(NA, nrow=ncol(metadata), ncol=3))  
@@ -163,13 +158,13 @@ fit.ZICP <- function(features,
 }
 
 ##################################
-# Fit ZICP To A List of Datasets #
+# Fit ZICP2 To A List of Datasets #
 ##################################
 
-list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
+list.ZICP2<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
   foreach(physeq = physeq, 
           .export = c("pvalueAdjustment_HM", "append_qvalues",
-                      "fit.ZICP"), 
+                      "fit.ZICP2"), 
           .packages = c("tidyverse", "fdrtool", "ashr", "GMPR", "swfdr", "genefilter", "IHW",
                         "pbapply", "cplm", "glmmTMB"),
           .errorhandling = "remove") %dopar% 
@@ -179,7 +174,7 @@ list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
       metadata<-physeq$metadata
       libSize<-physeq$libSize
       ID<-physeq$ID
-      DD<-fit.ZICP(features, metadata, libSize, ID, transformation, multiple_qvalues)
+      DD<-fit.ZICP2(features, metadata, libSize, ID, transformation, multiple_qvalues)
       DD$pairwiseAssociation<-paste('pairwiseAssociation', 1:nrow(DD), sep='')
       wh.TP<-intersect(grep("[[:print:]]+\\_TP$", DD$metadata), grep("[[:print:]]+\\_TP$", DD$feature))
       newname<-paste0(DD$pairwiseAssociation[wh.TP], "_TP")

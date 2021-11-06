@@ -1,48 +1,36 @@
-###################################################################################
-# Zero-inflated Compound Poisson with libray size offset in count submodel (ZICP) #
-###################################################################################
+####################################################################
+# Vanilla Poisson regression (poisson) with Library Size as Offset #
+####################################################################
 
 ###########################
 # Load Essential Packages #
 ###########################
 
-# pacman, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
+# pacman, devtools, dplyr, tidyverse, fdrtool, ashr, GMPR, swfdr, genefilter, IHW
 load_essential_packages()
 
 ###########################################
 # Load Dedicated Method-specific Packages #
 ###########################################
 
-pacman::p_load("pbapply", "glmmTMB", "cplm")
+pacman::p_load('pbapply', 'car', 'nlme')
 
-if (packageVersion("statmod")!="1.4.33"){
-  devtools::install_version("statmod", version = "1.4.33", repos = "http://cran.us.r-project.org")
-}
+############################
+# Fit poisson To A Dataset #
+############################
 
-if (packageVersion("cplm")!="0.7-8"){
-  devtools::install_version("cplm", version = "0.7-8", repos = "http://cran.us.r-project.org")
-}
-
-suppressPackageStartupMessages(library(statmod))
-suppressPackageStartupMessages(library(cplm))
-
-
-#########################
-# Fit ZICP To A Dataset #
-#########################
-
-fit.ZICP <- function(features, 
-                     metadata, 
-                     libSize, 
-                     ID, 
-                     transformation,
-                     multiple_qvalues){
+fit.poisson <- function(features, 
+                   metadata, 
+                   libSize, 
+                   ID, 
+                   transformation,
+                   multiple_qvalues){
   
   #########################
   # Transformation if any #
   #########################
   
-  if (transformation!='NONE') stop ('Transformation currently not supported for a default ZICP model. Use NONE.')
+  if (transformation!='NONE') stop ('Transformation currently not supported for a default poisson model. Use NONE.')
   
   #####################
   # Per-feature model #
@@ -80,12 +68,12 @@ fit.ZICP <- function(features,
       fit <- tryCatch({
         fit1 <- glmmTMB::glmmTMB(formula = formula,  
                                  data = dat_sub, 
-                                 family = glmmTMB::tweedie(link = "log"), 
+                                 family = poisson, 
                                  ziformula = ~0)
       }, error=function(err){
         fit1 <- try({glmmTMB::glmmTMB(formula = formula,  
                                       data = dat_sub, 
-                                      family = glmmTMB::tweedie(link = "log"), 
+                                      family = poisson, 
                                       ziformula = ~0)}) 
         return(fit1)
       })
@@ -109,13 +97,11 @@ fit.ZICP <- function(features,
     # Fixed effects model #
     #######################
     
-    else{ 
+    else{
       fit <- tryCatch({
-        fit1 <- cplm::zcpglm(formula, 
-                            data = dat_sub)
+        fit1 <- glm(formula, data = dat_sub, family='poisson')
       }, error=function(err){
-        fit1 <- try({cplm::zcpglm(formula, 
-                                 data = dat_sub)}) 
+        fit1 <- try({glm(formula, data = dat_sub, family='poisson')}) 
         return(fit1)
       })
       
@@ -124,17 +110,24 @@ fit.ZICP <- function(features,
       ###################################
       
       if (class(fit) != "try-error"){
-        para<-as.data.frame(summary(fit)$coefficients$tweedie)[-1,-3]
-      } else{
+        para<-as.data.frame(summary(fit)$coefficients)[-1,-c(2:3)]
+        colnames(para)<-c('coef', 'pval')
+        para$metadata<-colnames(metadata)
+        para$feature<-colnames(features)[x]
+        rownames(para)<-NULL
+      } 
+      else{
         print(paste("Fitting problem for feature", x, "returning NA"))
-        para<- as.data.frame(matrix(NA, nrow=ncol(metadata), ncol=3))  
+        para<- as.data.frame(matrix(NA, nrow=ncol(metadata), ncol=2))
+        colnames(para)<-c('coef', 'pval')
+        para$metadata<-colnames(metadata)
+        para$features<-colnames(features)[x]
+        rownames(para)<-NULL
       }
-      colnames(para)<-c('coef', 'stderr', 'pval')
-      para$metadata<-colnames(metadata)
-      para$feature<-colnames(features)[x]
     }
+    
     return(para)
-  })
+  })    
   
   ###################
   # Combine results #
@@ -159,19 +152,19 @@ fit.ZICP <- function(features,
   paras<-paras[order(paras$qval_BH, decreasing=FALSE),]
   paras<-dplyr::select(paras, c('feature', 'metadata'), everything())
   rownames(paras)<-NULL
-  return(paras)     
+  return(paras)   
 }
 
-##################################
-# Fit ZICP To A List of Datasets #
-##################################
+#####################################
+# Fit poisson To A List of Datasets #
+#####################################
 
-list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
+list.poisson<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
   foreach(physeq = physeq, 
           .export = c("pvalueAdjustment_HM", "append_qvalues",
-                      "fit.ZICP"), 
+                      "fit.poisson"), 
           .packages = c("tidyverse", "fdrtool", "ashr", "GMPR", "swfdr", "genefilter", "IHW",
-                        "pbapply", "cplm", "glmmTMB"),
+                        "pbapply", "MASS", "glmmTMB"),
           .errorhandling = "remove") %dopar% 
     {
       start.time<-Sys.time()
@@ -179,7 +172,7 @@ list.ZICP<-function(physeq, transformation = 'NONE', multiple_qvalues = TRUE){
       metadata<-physeq$metadata
       libSize<-physeq$libSize
       ID<-physeq$ID
-      DD<-fit.ZICP(features, metadata, libSize, ID, transformation, multiple_qvalues)
+      DD<-fit.poisson(features, metadata, libSize, ID, transformation, multiple_qvalues)
       DD$pairwiseAssociation<-paste('pairwiseAssociation', 1:nrow(DD), sep='')
       wh.TP<-intersect(grep("[[:print:]]+\\_TP$", DD$metadata), grep("[[:print:]]+\\_TP$", DD$feature))
       newname<-paste0(DD$pairwiseAssociation[wh.TP], "_TP")

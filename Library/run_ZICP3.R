@@ -69,7 +69,7 @@ fit.ZICP3 <- function(features,
     
     if(length(unique(libSize)) > 1){ # To prevent offsetting with TSS-normalized data 
       formula<-update(formula, . ~ . - offset(log(libSize)))
-      formula_zicp<-update(formula,. ~ . || 1 + offset(log(libSize)))
+      formula_zicp<-as.formula(paste(paste(deparse(formula), collapse= ''), " || 1 +  offset(log(libSize))"))
     }
     
     #######################

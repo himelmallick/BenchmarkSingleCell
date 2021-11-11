@@ -63,7 +63,7 @@ fit.ZICP4 <- function(features,
     dat_sub <- data.frame(expr = as.numeric(featuresVector), metadata, libSize, ID)
     dat_sub2<- dat_sub[, !colnames(dat_sub) %in% c('expr', 'ID')]
     formula<-as.formula(paste("expr ~ ", paste(colnames(dat_sub2), collapse= "+")))
-    formula_zicp<-update(formula,. ~ . || 1 + libSize)
+    formula_zicp<-as.formula(paste(paste(deparse(formula), collapse= ''), " || 1 + libSize"))
     
     #######################
     # Random effect model #

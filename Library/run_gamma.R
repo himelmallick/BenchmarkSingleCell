@@ -32,6 +32,12 @@ fit.gamma <- function(features,
   
   if (transformation!='NONE') stop ('Transformation currently not supported for a default gamma model. Use NONE.')
   
+  ###################
+  # Add pseudocount #
+  ###################
+  
+  features <- features + 1
+  
   #####################
   # Per-feature model #
   #####################

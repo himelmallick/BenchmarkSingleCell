@@ -49,6 +49,7 @@ fit.negbin2 <- function(features,
     #################################
     
     dat_sub <- data.frame(expr = as.numeric(featuresVector), metadata, libSize, ID)
+    dat_sub$libSize<-log(dat_sub$libSize) # Log transformation
     dat_sub2<- dat_sub[, !colnames(dat_sub) %in% c('expr', 'ID')]
     formula<-as.formula(paste("expr ~ ", paste(colnames(dat_sub2), collapse= "+")))
 
